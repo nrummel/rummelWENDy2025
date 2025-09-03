@@ -1,0 +1,4 @@
+# Weak form Estimation of Nonlinear Dynamics (WENDy) for Nonlinear-in-Parameters ODEs 
+This repository recreates all of the plots from the [paper](https://arxiv.org/abs/2502.08881#:~:text=The%20Weak%2Dform%20Estimation%20of,gradient%20and%20its%20Hessian%20matrix.) 
+
+In order to re-run all simulations with the provided script would take a very long time on a single machine. We scaled up the code to distribute the simulations across many machines in the [Blanca cluster](https://curc.readthedocs.io/en/latest/clusters/blanca/blanca.html). If you wish to also scale in this way, please reach out to the Mr. Rummel.
