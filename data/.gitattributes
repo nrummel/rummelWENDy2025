@@ -1,0 +1,4 @@
+goodwin.summary.jld2 filter=lfs diff=lfs merge=lfs -text
+hindmarshRose.summary.jld2 filter=lfs diff=lfs merge=lfs -text
+lorenzExperiment.jld2 filter=lfs diff=lfs merge=lfs -text
+sir.summary.jld2 filter=lfs diff=lfs merge=lfs -text
