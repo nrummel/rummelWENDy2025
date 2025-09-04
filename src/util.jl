@@ -12,6 +12,7 @@ using OrdinaryDiffEq: ODEProblem, OrdinaryDiffEqAlgorithm, Rosenbrock23, solve a
 using JLD2
 ## define all odes 
 includet("wendyData.jl")
+includet("odes/logisticGrowth.jl")
 includet("odes/lorenz.jl")
 includet("odes/hindmarshRose.jl")
 includet("odes/goodwin.jl")

@@ -2,3 +2,12 @@ goodwin.summary.jld2 filter=lfs diff=lfs merge=lfs -text
 hindmarshRose.summary.jld2 filter=lfs diff=lfs merge=lfs -text
 lorenzExperiment.jld2 filter=lfs diff=lfs merge=lfs -text
 sir.summary.jld2 filter=lfs diff=lfs merge=lfs -text
+computationalCostExperiment_M.jld2 filter=lfs diff=lfs merge=lfs -text
+goodwinCostFunData_nr.0.01_mc.1.jld2 filter=lfs diff=lfs merge=lfs -text
+goodwinCostFunData.nr.0.2.summary.jld2 filter=lfs diff=lfs merge=lfs -text
+computationalCostExperiment_K.jld2 filter=lfs diff=lfs merge=lfs -text
+goodwinCostFunData.nr.0.01.summary.jld2 filter=lfs diff=lfs merge=lfs -text
+goodwinCostFunData.nr.0.05.summary.jld2 filter=lfs diff=lfs merge=lfs -text
+goodwinCostFunData.nr.0.1.summary.jld2 filter=lfs diff=lfs merge=lfs -text
+goodwinCostFunData.nr.0.15.summary.jld2 filter=lfs diff=lfs merge=lfs -text
+goodwinCostFunData.nr.0.25.summary.jld2 filter=lfs diff=lfs merge=lfs -text
