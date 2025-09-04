@@ -147,7 +147,7 @@ function plotSweep(;
             p,
             bar(
                 x=[iii],
-                y=[mean_failRate],
+                y=[mean_failRate+10],
                 text=["$(@sprintf "%.0f" mean_failRate[1])%"],
                 textposition="outside",
                 marker_color=algo2Color[algo],
@@ -210,11 +210,11 @@ function plotSweep(;
     end
     failure_ytickvals = 
     if maxFailPercent > 50
-        range(0, maxFailPercent, step=10)
+        range(0, maxFailPercent+10, step=10)
     elseif maxFailPercent > 20
-        range(0, maxFailPercent, step=5)
+        range(0, maxFailPercent+10, step=5)
     else 
-        0:maxFailPercent
+        0:maxFailPercent+10
     end
     ## Layout plot 
     relayout!(p,
@@ -268,9 +268,9 @@ function plotSweep(;
             domain=avgAcrossSubs ? [0, 0.45] : [0, 0.8],
         ),
         yaxis3=attr(
-            range=(0,maxFailPercent),
+            range=(5,maxFailPercent+10),
             tickvals=failure_ytickvals,
-            ticktext=["$p%" for p in failure_ytickvals],
+            ticktext=[p < 10 ? "" : "$(p-10)%" for p in failure_ytickvals],
             title_text="Failure Rate",
             title_font_size=15,
             tickfont_size=15,
