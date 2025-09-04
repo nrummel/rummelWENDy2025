@@ -65,8 +65,8 @@ for nr in noiseRatios
             showlegend=false,
             xaxis=attr(
                 title=attr(
-                    text=L"\huge{p_4}",
-                    font=attr(size=60)
+                    text="p<sub>4</sub>",
+                    font_size=40
                 ),
                 tickfont=attr(
                     size=25
@@ -74,8 +74,8 @@ for nr in noiseRatios
             ),
             yaxis=attr(
                 title=attr(
-                    text=L"\huge{p_5}",
-                    font_size=60
+                    text="p<sub>5</sub>",
+                    font_size=40
                 ),
                 tickfont=attr(
                     size=25

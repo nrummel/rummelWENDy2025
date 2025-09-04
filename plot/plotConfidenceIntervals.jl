@@ -154,7 +154,8 @@ function plotConfidenceIntervals(;
                         tickfont_size=25
                     ),
                     attr(
-                        title_text="\$p_{$j}\$",
+                        title_text="p<sub>$j</sub>",
+                        tickfont_size=20,
                         title_font_size=25,
                         # showexponent="all",
                         exponentformat="E",
@@ -164,7 +165,9 @@ function plotConfidenceIntervals(;
         )
     end
     relayout!(p,
-         title=attr(
+        uniformtext_minsize=20,
+        uniformtext_mode="show",
+        title=attr(
             text="$(ex2Disp[odeName])",#<br>$(metric2Str[metric])",
             font_size=30,
             xanchor="center", 

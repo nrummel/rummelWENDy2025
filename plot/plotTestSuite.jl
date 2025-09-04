@@ -203,7 +203,8 @@ function plotSweep(;
         fsl2_yaxis_range =  nothing
     end
     realAlgos = filter(algo-> algo != :truth && algo != :init, algoNames)
-    maxFailPercent = Int(round(maximum(mean(yy[algo].failRate[:]) for algo in realAlgos)*100 + 5))
+    maxFailPercent = avgAcrossSubs ? maximum(mean(yy[algo].failRate[:]) for algo in realAlgos) : maximum(maximum(mean(yy[algo].failRate, dims=1)[:]) for algo in realAlgos)
+    maxFailPercent = Int(round(maxFailPercent*100 + 5))
     while mod(maxFailPercent,5) != 0
         maxFailPercent +=1
     end
