@@ -18,6 +18,7 @@ function plotConfidenceIntervals(;
     resDic =  JLD2.load(fn)
     results = resDic["results"] 
     noiseRatios = copy(resDic["noiseRatios"])
+    filter!( nr-> nr <= maxNoise, noiseRatios,)
     U0s = resDic["U0s"]
     subSampleRates = resDic["subSampleRates"]
     ## Process data
@@ -44,8 +45,9 @@ function plotConfidenceIntervals(;
             catch 
                 missing 
             end
+            
             # Remove negative covariances?
-            ixBad = findall(cov[i,iii,mc,:] .< 0)
+            ixBad = findall( (cov[i,iii,mc,:] .< 0) .| isnan.(cov[i,iii,mc,:]))
             cov[i,iii,mc,ixBad] .= 0 
         end
     end

@@ -7,6 +7,8 @@ using Tullio
 function plotEstimatorQuality(;
     ex = HINDMARSH_ROSE,
     corruptU0 = true,
+    maxNoise=Inf,
+    biasCorrectionCheck=false
 )
     ## Unpack the saved data 
     fn = joinpath(DATA_DIR, "$(ex.name).summary.jld2")
@@ -19,6 +21,8 @@ function plotEstimatorQuality(;
     resDic =  JLD2.load(fn)
     results = resDic["results"] 
     noiseRatios = copy(resDic["noiseRatios"])
+    filter!(x->x <= maxNoise, noiseRatios)
+    maxNoise = minimum([maxNoise, maximum(noiseRatios)])
     U0s = resDic["U0s"]
     subSampleRates = resDic["subSampleRates"]
     ## Process data
@@ -49,7 +53,7 @@ function plotEstimatorQuality(;
                 missing 
             end
             # Remove negative covariances?
-            ixBad = findall(cov[i,iii,mc,:] .< 0)
+            ixBad = findall( (cov[i,iii,mc,:] .< 0) .| isnan.(cov[i,iii,mc,:]))
             cov[i,iii,mc,ixBad] .= 0 
         end
     end
@@ -85,6 +89,13 @@ function plotEstimatorQuality(;
         mse[i,iii,j] = mean(skipmissing(_mse[i,iii,goodIX[i,iii],j]))
         coverage[i,iii,j] = mean(skipmissing(_coverage[i,iii,goodIX[i,iii],j]))
     end
+    # Check how efficiency if we correct for bias
+    _bias_corrected_coverage = similar(what)
+    @tullio _bias_corrected_coverage[i,iii,mc,j] = abs(_bias[i,iii,mc,j] - bias[i,iii,j]) < (2*sqrt(cov[i,iii,mc,j]))
+    bias_corrected_coverage = similar(cov_bar)
+    for i in 1:_I, iii in 1:III, j in 1:J 
+        bias_corrected_coverage[i,iii,j] = mean(skipmissing(_bias_corrected_coverage[i,iii,goodIX[i,iii],j]))
+    end
    
     ## Compute relative bias     
     relativeBias2 = similar(bias)
@@ -96,9 +107,14 @@ function plotEstimatorQuality(;
         relativeMSE[:,:,j] .= mse[:,:,j] ./ abs(wstar[j])^2 * 100
     end
     coverage*=100 # to get coverage as a percentage
-
-    open(joinpath(FIG_DIR, "$(ex.name)_UQ_summary.tex"), "w") do f
+    bias_corrected_coverage*=100
+    @info "Summary of results : "*joinpath(FIG_DIR,"..", "$(ex.name)_UQ_summary.tex")
+    open(joinpath(FIG_DIR,"..", "$(ex.name)_UQ_summary.tex"), "w") do f
         s = """Across all parameters, the median estimated relative squared bias, variance, and mean squared error are $(@sprintf "%.3g" median(relativeBias2[:]))\\%, $(@sprintf "%.3g" median(relativeVar[:]))\\%, $(@sprintf "%.3g" median(relativeMSE[:]))\\% respectively. The median coverage across all parameters is $(@sprintf "%.3g" median(coverage[:]))\\%."""
+        if biasCorrectionCheck  
+            s*="Debiasing using empirical bias, we see that the median debiased coverage then becomes $(@sprintf "%.3g" median(bias_corrected_coverage[:]))\\%"
+        end
+        @info s
         write(f, s)
     end
 
@@ -117,7 +133,7 @@ function plotEstimatorQuality(;
                         name="M = $(Int(round(1024/sub)))",
                         showlegend=j==1,
                         legendgrouptitle=attr(text=name),
-                        legendgroup="$(name)_$j",  
+                        legendgroup="$(name)",  
                         marker_color=PLOTLYJS_COLORS[k],
                         mode="lines+markers",
                         line_dash=dash
@@ -134,7 +150,7 @@ function plotEstimatorQuality(;
                     name="M = $(Int(round(1024/sub)))",
                     showlegend=j==1,
                     legendgrouptitle=attr(text="Coverage"),
-                    legendgroup="Bias_$j",  
+                    legendgroup="coverage",  
                     marker_color=PLOTLYJS_COLORS[4],
                     mode="lines+markers",
                     line_dash=dash
@@ -142,6 +158,24 @@ function plotEstimatorQuality(;
                 row=j, 
                 col=2
             )
+            if biasCorrectionCheck
+                add_trace!(
+                    p, 
+                    scatter(
+                        x=noiseRatios,
+                        y=bias_corrected_coverage[:,iii,j],
+                        name="M = $(Int(round(1024/sub)))",
+                        showlegend=j==1,
+                        legendgrouptitle=attr(text="Bias Corrected Coverage"),
+                        legendgroup="bias_corrected_coverage",  
+                        marker_color=PLOTLYJS_COLORS[5],
+                        mode="lines+markers",
+                        line_dash=dash
+                    ), 
+                    row=j, 
+                    col=2
+                )
+            end
         end
         add_trace!(
                 p, 
@@ -240,7 +274,11 @@ function plotEstimatorQuality(;
     )
     return p
 end
-
+ex2maxNoise = Dict(
+    HINDMARSH_ROSE.name=>0.1,
+    GOODWIN.name=>0.25,
+    SIR.name=>0.2
+)
 ex2HeightWidth = Dict(
     HINDMARSH_ROSE.name=>(800,600),
     GOODWIN.name=>(800,600),
@@ -255,6 +293,7 @@ for ex in [HINDMARSH_ROSE, GOODWIN, SIR]
     height, width = ex2HeightWidth[ex.name]
     p = plotEstimatorQuality(
         ex=ex, 
+        maxNoise= ex2maxNoise[ex.name]
     ) 
     display(p)
     plot_file = joinpath(FIG_DIR, "$(ex.name)_estimateQuality.pdf")

@@ -13,13 +13,15 @@ function plotSweep(;
     ex = HINDMARSH_ROSE,
     nominalVal=NaN,
     center_fun = mean,
-    yaxis_type = "log", # "linear"
+    yaxis_type = "log", # "linear" 
     yaxis_range = nothing, # (0,100),
     maxNoise = 0.3,
     algoNames = [:init,:truth,:oels,:wls,:wendy_irls,:wendy_mle, :hybrid],
     avgAcrossSubs=true,
+    showErrorBars=false,
     nrIx=5,
-    subIx=3
+    subIx=3, 
+    subIX=nothing
 )
     fn = joinpath(DATA_DIR, "$(ex.name).summary.jld2")
     Mfull = length(ex.tt_full)-1
@@ -81,12 +83,19 @@ function plotSweep(;
     ## Plotting
     p = make_subplots(rows=2, cols=2)
     linespec = ["solid", "dash", "dot"]
-    for (k,algo) in enumerate(algoNames), (iii, sub) in enumerate(subSampleRates)
+    if !isnothing(subIX)
+        ss = [subIX]
+        subSampleRates = [subSampleRates[subIX]]
+    else 
+        ss = 1:length(subSampleRates)
+    end
+    plotOne = !isnothing(subIX) || avgAcrossSubs
+    for (k,algo) in enumerate(algoNames), (j, (iii, sub)) in enumerate(zip(ss, subSampleRates))
         if algo == :truth 
             continue 
         end
         if avgAcrossSubs 
-            if iii > 1
+            if j > 1
                 continue 
             end
             cl2 = mean(yy[algo].cl2, dims=2)[:]
@@ -98,7 +107,7 @@ function plotSweep(;
             mean_failRate = mean(yy[algo].failRate[:])*100
             name= algo2Disp[algo]
             legendgrouptitle=nothing
-            dash =nothing
+            dash = algo==:hybrid ? "dot" : "solid"
         else 
             cl2 = yy[algo].cl2[:,iii]
             cl2_std = yy[algo].cl2_std[:,iii]
@@ -114,7 +123,12 @@ function plotSweep(;
             )
             dash = linespec[iii]
         end
-        if algo == :init && iii > 1 
+        if !isnothing(subIX)
+            name= algo2Disp[algo]
+            legendgrouptitle=nothing
+            dash = algo==:hybrid ? "dot" : "solid"
+        end
+        if algo == :init && j > 1 
             continue 
         end
         add_trace!(
@@ -125,6 +139,10 @@ function plotSweep(;
                 text=[
                     "$(@sprintf "%.3g" yi) +/- $(@sprintf "%.3g" stdyi), failRate = $(@sprintf "%.3g" (failRatei*100))%" 
                 for (yi, stdyi, failRatei) in zip(cl2, cl2_std, failRate)],
+                error_y=attr(
+                    array=cl2_std,
+                    visible=algo!=:init&&showErrorBars
+                ),
                 hoverinfo="text",
                 mode="lines",
                 line=attr(
@@ -148,6 +166,10 @@ function plotSweep(;
                 text=[
                     "$(@sprintf "%.3g" yi) +/- $(@sprintf "%.3g" stdyi), failRate = $(@sprintf "%.3g" (failRatei*100))%" 
                 for (yi, stdyi, failRatei) in zip(fsl2, fsl2_std, failRate)],
+                 error_y=attr(
+                    array=fsl2_std,
+                    visible=algo!=:init&&showErrorBars
+                ),
                 hoverinfo="text",
                 mode="lines",
                 line=attr(
@@ -168,7 +190,7 @@ function plotSweep(;
         add_trace!(
             p,
             bar(
-                x=[iii],
+                x=plotOne ? [1] : [iii],
                 y=[mean_failRate+10],
                 text=["$(@sprintf "%.0f" mean_failRate[1])%"],
                 textposition="outside",
@@ -179,7 +201,22 @@ function plotSweep(;
             row=2, 
             col=1
         )
-        if iii> 1 || !avgAcrossSubs
+        add_trace!(
+            p,
+            scatter(
+                x=[-10,10],
+                y=[10,10],
+                mode="lines",
+                line=attr(
+                    color="black",
+                    width=1
+                ),
+                showlegend=false
+            ),
+            row=2, 
+            col=1
+        )
+        if j > 1 || !plotOne
             continue 
         end 
         add_trace!(
@@ -255,7 +292,13 @@ function plotSweep(;
         fsl2_yaxis_range =  nothing
     end
     realAlgos = filter(algo-> algo != :truth && algo != :init, algoNames)
-    maxFailPercent = avgAcrossSubs ? maximum(mean(yy[algo].failRate[:]) for algo in realAlgos) : maximum(maximum(mean(yy[algo].failRate, dims=1)[:]) for algo in realAlgos)
+    maxFailPercent = if avgAcrossSubs
+        maximum(mean(yy[algo].failRate[:]) for algo in realAlgos) 
+    elseif !isnothing(subIX)
+        maximum(maximum(yy[algo].failRate[:,subIX]) for algo in realAlgos)
+    else  
+        maximum(maximum(mean(yy[algo].failRate, dims=1)[:]) for algo in realAlgos)
+    end
     maxFailPercent = Int(round(maxFailPercent*100 + 5))
     while mod(maxFailPercent,5) != 0
         maxFailPercent +=1
@@ -273,13 +316,13 @@ function plotSweep(;
         margin_t=0,
         showlegend=true,
         xaxis=attr(
-            title_text= avgAcrossSubs ? "Noise Ratio" : "",
+            title_text= plotOne ? "Noise Ratio" : "",
             title_font_size=15,
             tickfont_size=15,
             tickvals=0.0:0.05:maxNoise,
             ticktext=["$(Int(round(nr*100)))%" for nr in 0.0:.05:maxNoise],
             tickangle=45,
-            domain=avgAcrossSubs ? [0, 0.45] : [0, 0.8],
+            domain=plotOne ? [0, 0.45] : [0, 0.8],
         ),
         yaxis=attr( 
             type=yaxis_type,
@@ -289,35 +332,36 @@ function plotSweep(;
             title_text="Coefficient Error",
             title_font_size=15,
             tickfont_size=15,
-            domain= avgAcrossSubs ? [0.55, 0.9] : [0.625, 0.9],
+            domain= plotOne ? [0.55, 0.9] : [0.625, 0.9],
         ),
         xaxis2=attr(
-            title_text= avgAcrossSubs ? "Noise Ratio" : "",
+            title_text= plotOne ? "Noise Ratio" : "",
             title_font_size=15,
             tickfont_size=15,
             tickvals=0:0.05:maxNoise,
             ticktext=["$(Int(round(nr*100)))%" for nr in 0:.05:maxNoise],
             tickangle=45,
-            domain=avgAcrossSubs ? [0.55, 1] : [0, 0.8],
+            domain=plotOne ? [0.55, 1] : [0, 0.8],
         ),
         yaxis2=attr( 
             type=yaxis_type,
             range=fsl2_yaxis_range,
-            side = avgAcrossSubs ? "right" : "left",
+            side = plotOne ? "right" : "left",
             tickvals=fsl2_yaxis_tickvals,
             ticktext=fsl2_yaxis_ticktext,
             title_text="Forward Simulation Error",
             title_font_size=15,
             tickfont_size=15,
-            domain=avgAcrossSubs ? [0.55, 0.9] : [0.325, 0.575],
+            domain=plotOne ? [0.55, 0.9] : [0.325, 0.575],
         ),
         xaxis3=attr(
-            title_text="",
-            tickvals=[1],
-            ticktext=[""],
+            range=plotOne ? [0.5,1.5] : [0.5,3.5],
+            title_text=plotOne ? "" : "M",
+            tickvals=plotOne ? [1] : 1:III,
+            ticktext=plotOne ? [""] : [Int(1024/sub) for sub in subSampleRates],
             title_font_size=15,
             tickfont_size=15,
-            domain=avgAcrossSubs ? [0.4, 0.75] : [0, 0.8],
+            domain=plotOne ? [0.4, 0.75] : [0, 0.8],
         ),
         yaxis3=attr(
             range=(5,maxFailPercent+10),
@@ -326,11 +370,11 @@ function plotSweep(;
             title_text="Failure Rate",
             title_font_size=15,
             tickfont_size=15,
-            side = avgAcrossSubs ? "right" : "left",
-            domain=avgAcrossSubs ? [0, 0.35] : [0, 0.275]
+            side = plotOne ? "right" : "left",
+            domain=plotOne ? [0, 0.35] : [0, 0.275]
         ),
-        # uniformtext_minsize=10,
-        # uniformtext_mode="show",
+        uniformtext_minsize=10,
+        uniformtext_mode="show",
         title=attr(
             text="$(displayName)",
             font_size=20,
@@ -340,7 +384,7 @@ function plotSweep(;
         ),
         legend=attr(
             x= 1.1,
-            y= avgAcrossSubs ? 0 : 0.5,
+            y= plotOne ? 0 : 0.5,
             xanchor="center",
             yanchor="center",
             font=(
@@ -359,7 +403,7 @@ function plotSweep(;
         ),
         hovermode="x unified",
     )
-    if avgAcrossSubs
+    if plotOne
         relayout!(p,
             xaxis4=attr(
                 tickvals=1:length(algoNames)-2,
@@ -375,7 +419,7 @@ function plotSweep(;
                 side = "left",
                 title_font_size=15,
                 tickfont_size=15,
-                domain=avgAcrossSubs ? [0, 0.35] : [0, 0.275]
+                domain=[0, 0.35]
             ) 
         )
     end
@@ -383,22 +427,28 @@ function plotSweep(;
 end
 ##
 ex2maxNoise = Dict(
-    HINDMARSH_ROSE.name=>0.2,
+    HINDMARSH_ROSE.name=>.1,
     GOODWIN.name=>0.25,
-    SIR.name=>0.25
+    SIR.name=>0.2
 )
 save_dir = FIG_DIR
 if !isdir(save_dir)
     mkpath(save_dir)
 end 
 for ex in [HINDMARSH_ROSE, GOODWIN, SIR]
-    p = plotSweep(ex=ex,  maxNoise= ex2maxNoise[ex.name], avgAcrossSubs=true) 
-    # display(p)
-    plot_file = joinpath(FIG_DIR, "$(ex.name)_accuracy_avg.pdf")
+    # p = plotSweep(ex=ex,  maxNoise= ex2maxNoise[ex.name], avgAcrossSubs=true) 
+    # # display(p)
+    # plot_file = joinpath(FIG_DIR, "$(ex.name)_accuracy_avg.pdf")
+    # @info "Saving to $plot_file"
+    # savefig(p,plot_file, height=600, width=600)
+    # Just plot the lines for iii=3 (M=256)
+    p = plotSweep(ex=ex,  maxNoise= ex2maxNoise[ex.name], avgAcrossSubs=false, subIX=3) 
+    display(p)
+    plot_file = joinpath(FIG_DIR, "$(ex.name)_accuracy_M256.pdf")
     @info "Saving to $plot_file"
     savefig(p,plot_file, height=600, width=600)
     p = plotSweep(ex=ex,  maxNoise= ex2maxNoise[ex.name], avgAcrossSubs=false) 
-    # display(p)
+    display(p)
     plot_file = joinpath(FIG_DIR, "$(ex.name)_accuracy.pdf")
     @info "Saving to $plot_file"
     savefig(p,plot_file, height=1000, width=600)

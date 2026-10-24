@@ -98,7 +98,7 @@ function computeMetrics!(
         ∇r = WENDy.JacobianResidual(wendyProb.data, params)
         Ghat = ∇r(what)  
         Shat = S(what; transpose=false, doChol=false)
-        (Ghat \ Shat) / (Ghat')
+        inv(Ghat' * (Shat \ Ghat))
     catch
         NaN*ones(J,J)
     end
