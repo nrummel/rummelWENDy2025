@@ -2,14 +2,15 @@
 includet("util.jl")
 using ArgParse, ProgressMeter
 ##
+DATA_DIR = joinpath(@__DIR__, "..", "data")
 save_dir = joinpath(DATA_DIR, "biasExperimentSubResults")
 if !isdir(save_dir)
     mkpath(save_dir)
 end  
 function _getGoodwinExample()
-    wstar = [3.4884, 0.0969, 2.15, 10, 0.0969, 0.0581, 0.0969, 0.0775]
+    wstar = [3.4884, 0.0969, 1. , 10, 0.0969, 0.0581, 0.0969, 0.0775]
     function _f!(du,u,p,t)
-        du[1] = wstar[3] / (wstar[3] + u[3]^p[1]) - wstar[2] * u[1]
+        du[1] = wstar[1] / (2.15 + wstar[3]*u[3]^p[1]) - wstar[2] * u[1]
         du[2] = p[2]*u[1]- wstar[6]*u[2]
         du[3] = wstar[7]*u[2]-wstar[8]*u[3]
         nothing
@@ -25,7 +26,7 @@ function _getGoodwinExample()
         radiusMaxTime  = 10.0,
         Kmax           = 500
     )
-    pstar = [wstar[4], wstar[6]] 
+    pstar = [wstar[4], wstar[5]] 
 
     return SimulatedWENDyData(
         "goodwin", 
@@ -48,7 +49,7 @@ function _goodwinExperiment(nr::AbstractFloat, mc::Int)
         0.1287,  # w5
     ]
     w1Min, w1Max = 5, 20
-    w2Min, w2Max = 0.04, 0.1
+    w2Min, w2Max = 0.07, 0.13
     dw1=0.01
     dw2=0.001
     ww1 = w1Min:dw1:w1Max
@@ -62,7 +63,7 @@ function _goodwinExperiment(nr::AbstractFloat, mc::Int)
             timeSubsampleRate=1, 
             corruptU0=false
         )
-        algoNames =[:fslsq, :trustRegion]
+        algoNames = (wendy_mle=TrustRegion(),)
         @info "  solving wendyProb..."
         wendyProb, w0, results = runExample(ex, simParams, algoNames; w0=p0, ll=Info)
         wnll = zeros(length(ww2), length(ww1))
@@ -79,7 +80,7 @@ function _goodwinExperiment(nr::AbstractFloat, mc::Int)
         JLD2.save(
             _saveFile, 
             Dict(
-                "what"=>results.trustRegion.what, 
+                "what"=>results.wendy_mle.what, 
                 "wnll"=>wnll
             )
         )
@@ -99,7 +100,7 @@ function _goodwinSummary()
         0.1287,  # w5
     ]
     w1Min, w1Max = 5, 20
-    w2Min, w2Max = 0.04, 0.1
+    w2Min, w2Max = 0.07, 0.13
     dw1=0.01
     dw2=0.001
     ww1 = w1Min:dw1:w1Max
@@ -111,7 +112,7 @@ function _goodwinSummary()
         what = zeros(2, length(MCs))
         wnll = zeros(length(ww2), length(ww1), length(MCs))
         for (k,mc) in enumerate(MCs)
-            _saveFile = joinpath(DATA_DIR,"goodwinCostFunData_nr.$(nr)_mc.$(mc).jld2")
+            _saveFile = joinpath(save_dir,"goodwinCostFunData_nr.$(nr)_mc.$(mc).jld2")
             _retDic = JLD2.load(_saveFile)
             what[:,k] .= _retDic["what"]
             wnll[:,:,k] .= _retDic["wnll"]
@@ -148,14 +149,14 @@ if abspath(PROGRAM_FILE) == @__FILE__
         "--summary"
             help = "Summarize data "
             arg_type = Int
-            default = 1
+            default = 0
     end
     args = parse_args(s)
     println("Parsed args:")
     for (arg,val) in args
         println("  $arg  =>  $val")
     end
-    if args["summary"]
+    if args["summary"] == 1
         _goodwinSummary()
     else 
         nr, mc = args["noise-ratio"],  args["monte-carlo"]

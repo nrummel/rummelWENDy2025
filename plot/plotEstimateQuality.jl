@@ -70,28 +70,30 @@ function plotEstimatorQuality(;
         end
     end
     ## compute bias, variance, mse, and coverage
-    _bias = similar(what)
+    bias     = similar(cov_bar)
     _variance = similar(what)
     _mse = similar(what)
     _coverage = similar(what)
-    @tullio _bias[i,iii,mc,j]     = what[i,iii,mc,j] - wstar[j]
+    @tullio bias[i,iii,j]   = what_bar[i,iii,j] - wstar[j]
     @tullio _variance[i,iii,mc,j] = (what[i,iii,mc,j] - what_bar[i,iii,j])^2
-    @tullio _mse[i,iii,mc,j]      = _bias[i,iii,mc,j]^2 + _variance[i,iii,mc,j]
-    @tullio _coverage[i,iii,mc,j] = abs(_bias[i,iii,mc,j]) < (2*sqrt(cov[i,iii,mc,j]))
+    @tullio _mse[i,iii,mc,j]      = (what[i,iii,mc,j] - wstar[j])^2
+    
+    
+    @tullio _coverage[i,iii,mc,j] = abs(what[i,iii,mc,j] - wstar[j]) < (2*sqrt(cov[i,iii,mc,j]))
     # take the mean accross the third dimension
-    bias     = similar(cov_bar)
+    
     variance = similar(cov_bar)
     mse      = similar(cov_bar)
     coverage = similar(cov_bar)
     for i in 1:_I, iii in 1:III, j in 1:J 
-        bias[i,iii,j] = mean(skipmissing(_bias[i,iii,goodIX[i,iii],j]))
         variance[i,iii,j] = mean(skipmissing(_variance[i,iii,goodIX[i,iii],j]))
         mse[i,iii,j] = mean(skipmissing(_mse[i,iii,goodIX[i,iii],j]))
+        @assert isapprox(mse[i,iii,j], variance[i,iii,j] + bias[i,iii,j]^2; rtol=1e-8)
         coverage[i,iii,j] = mean(skipmissing(_coverage[i,iii,goodIX[i,iii],j]))
     end
     # Check how efficiency if we correct for bias
     _bias_corrected_coverage = similar(what)
-    @tullio _bias_corrected_coverage[i,iii,mc,j] = abs(_bias[i,iii,mc,j] - bias[i,iii,j]) < (2*sqrt(cov[i,iii,mc,j]))
+    @tullio _bias_corrected_coverage[i,iii,mc,j] = abs(what[i,iii,mc,j] - wstar[j] - bias[i,iii,j]) < (2*sqrt(cov[i,iii,mc,j]))
     bias_corrected_coverage = similar(cov_bar)
     for i in 1:_I, iii in 1:III, j in 1:J 
         bias_corrected_coverage[i,iii,j] = mean(skipmissing(_bias_corrected_coverage[i,iii,goodIX[i,iii],j]))

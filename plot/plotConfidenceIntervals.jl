@@ -63,27 +63,7 @@ function plotConfidenceIntervals(;
             @assert false
         end
     end
-    ## compute bias, variance, mse, and coverage
-    _bias = similar(what)
-    _variance = similar(what)
-    _mse = similar(what)
-    _coverage = similar(what)
-    @tullio _bias[i,iii,mc,j]     = what[i,iii,mc,j] - wstar[j]
-    @tullio _variance[i,iii,mc,j] = (what[i,iii,mc,j] - what_bar[i,iii,j])^2
-    @tullio _mse[i,iii,mc,j]      = _bias[i,iii,mc,j]^2 + _variance[i,iii,mc,j]
-    @tullio _coverage[i,iii,mc,j] = abs(_bias[i,iii,mc,j]) < (2*sqrt(cov[i,iii,mc,j]))
-    # take the mean accross the third dimension
-    bias     = similar(cov_bar)
-    variance = similar(cov_bar)
-    mse      = similar(cov_bar)
-    coverage = similar(cov_bar)
-    for i in 1:_I, iii in 1:III, j in 1:J 
-        bias[i,iii,j] = mean(skipmissing(_bias[i,iii,goodIX[i,iii],j]))
-        variance[i,iii,j] = mean(skipmissing(_variance[i,iii,goodIX[i,iii],j]))
-        mse[i,iii,j] = mean(skipmissing(_mse[i,iii,goodIX[i,iii],j]))
-        coverage[i,iii,j] = mean(skipmissing(_coverage[i,iii,goodIX[i,iii],j]))
-    end
-    @info "Plotting UQ"
+    @info "Plotting Confidence intervals"
     numCols = Int(floor(J / numRows))
     p = make_subplots(rows=numRows, cols=numCols, shared_xaxes=true)
     _nrs = filter(x->x <= maxNoise, noiseRatios)

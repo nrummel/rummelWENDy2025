@@ -36,8 +36,8 @@ algo2Color = (
     hybrid=PLOTLYJS_COLORS[6],
 )
 algo2Disp = (
-    init="w₀ Solution",
-    truth="w* Solution",
+    init="p₀ Solution",
+    truth="p* Solution",
     oels="OE-LS",#"Forward Solve Nonlinear Least Squares",
     wls="WLS", 
     wendy_irls="WENDy-IRLS",

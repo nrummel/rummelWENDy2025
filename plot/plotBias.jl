@@ -3,12 +3,12 @@ includet("../src/util.jl")
 includet("plotBase.jl")
 ##
 w1Min, w1Max = 5, 20
-w2Min, w2Max = 0.04, 0.1
+w2Min, w2Max = 0.07, 0.13
 dw1=0.01
 dw2=0.001
 ww1 = w1Min:dw1:w1Max
 ww2 = w2Min:dw2:w2Max
-wstar = [10, 0.0581]
+wstar = [10, 0.0969]
 noiseRatios = [0.01, 0.05, 0.1, 0.15, 0.2, 0.25]
 p1 =nothing
 for nr in noiseRatios

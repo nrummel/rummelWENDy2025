@@ -175,7 +175,7 @@ function runExample(ex, simParams,
             wendyProb = WENDyProblem(ex; ll=ll);
         end
         ## Pick a initialization point
-        algoNames = vcat(:init, :truth, keys(algorithms)...)
+        @show algoNames = vcat(:init, :truth, keys(algorithms)...)
         J = wendyProb.J
         if isnothing(w0)
             w0 = zeros(J)
@@ -237,11 +237,11 @@ function runExample(ex, simParams,
                 elseif algoName == :init
                     w0, 0, reshape(w0,J,1)
                 else
-                    try 
+                    # try 
                         solve(wendyProb, w0, ex.params; alg=algorithms[algoName], return_wits=true)
-                    catch
-                        (NaN * ones(J), -1, zeros(J,0)) 
-                    end
+                    # catch
+                    #     (NaN * ones(J), -1, zeros(J,0)) 
+                    # end
                 end
             end
             computeMetrics!(results[algoName], wendyProb, ex, alg_dt, what, iters, wits;ll=ll)

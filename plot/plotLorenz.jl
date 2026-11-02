@@ -87,7 +87,7 @@ p = plot(
     Layout(
         margin_t=0,
         # title_text="Lorenz Oscillator",
-        xaxis_title_text="Maximum Time Observed (s)",
+        xaxis_title_text="Maximum Time Observed",
         xaxis_title_font_size=25,
         xaxis_tickfont_size=20,
         yaxis_title_font_size=25,
