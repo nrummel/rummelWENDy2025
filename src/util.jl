@@ -98,7 +98,7 @@ function computeMetrics!(
         ∇r = WENDy.JacobianResidual(wendyProb.data, params)
         Ghat = ∇r(what)  
         Shat = S(what; transpose=false, doChol=false)
-        inv(Ghat' * (Shat \ Ghat))
+        (Ghat \ Shat) / (Ghat') # conservative covariance C_cons = Ĝ⁺ Ŝ (Ĝ⁺)ᵀ
     catch
         NaN*ones(J,J)
     end

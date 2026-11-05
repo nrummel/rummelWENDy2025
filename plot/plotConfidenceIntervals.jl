@@ -78,6 +78,7 @@ function plotConfidenceIntervals(;
         _xx = 1:_i
         rowIx = mod(j-1, numRows) + 1
         colIx = Int(floor((j-1)/numRows)) + 1
+        k = (rowIx-1)*numCols + colIx # make_subplots numbers axes row-major
         add_trace!(
             p, 
             scatter(
@@ -116,11 +117,11 @@ function plotConfidenceIntervals(;
             p;
             (; zip(
                 [
-                    j == 1 ? :xaxis : Symbol("xaxis$j"), 
-                    j == 1 ? :yaxis : Symbol("yaxis$j")
+                    k == 1 ? :xaxis : Symbol("xaxis$k"), 
+                    k == 1 ? :yaxis : Symbol("yaxis$k")
                 ], 
                 [
-                    j > J - numCols ? attr(
+                    rowIx == numRows ? attr(
                         tickangle=45,
                         tickmode="array",
                         tickvals=_xx,
